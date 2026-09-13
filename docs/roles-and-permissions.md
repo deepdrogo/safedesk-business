@@ -41,7 +41,9 @@ Platform staff never hold a customer role. They act through a separate **Operati
 - re-authentication on sensitive actions;
 - full audit recording.
 
-Staff are exempt from a customer's IP allowlist — which is what makes operator-assisted lockout recovery possible — and they are the only party who can create device sources, publish releases, grant trial terms or post a balance adjustment.
+Staff are exempt from a customer's IP allowlist — which is what makes operator-assisted lockout recovery possible — and they are the only party who can publish releases, grant trial terms or post a balance adjustment.
+
+**Device sources are a shared case.** The API's organization-manager policy permits an owner or admin to create one, but in practice SafeDesk operations create the source during provisioning and hand the shown-once secret to the customer's admin. That is deliberate: it is the step where a secret is generated, and it is the step a customer should never have to get right alone.
 
 ## Agents
 
@@ -81,6 +83,12 @@ An agent request from outside every enabled allowlist network is refused:
 { "error": { "code": "ip_not_allowed", "message": "IP address is not allowed.", "details": {} } }
 ```
 
+## Who is signed in
+
+The workspace shows presence for **every member and agent**: online state, last seen time, last seen IP, last login and role. An account counts as online when it made an authenticated request within the last five minutes and has not signed out since. The dashboard's *Signed in now* panel refreshes every 30 seconds, and the agents page shows the same flag per agent.
+
+This is a deliberately narrow claim. It reports *account activity against the control plane* — not whether someone is currently in a remote session, and not whether their endpoint is reachable.
+
 ## Private support threads
 
 Every account has its own support conversation with SafeDesk operators, reached from the chat in the workspace.
@@ -90,6 +98,22 @@ Every account has its own support conversation with SafeDesk operators, reached 
 - An operator reply is delivered only to the member who wrote, and also arrives as a notification.
 
 The practical consequence: agents report device and connection problems in their own chat, and ask their own administrator for anything that changes access — new agents, plan limits or trusted networks.
+
+## Administrative responsibilities
+
+Owners and administrators are expected to keep organization details accurate, review membership periodically, apply least privilege with separate human accounts, configure *and test* IP restrictions, control device sources and their signing secrets, monitor allowance / subscription / balance / orders, retain audit data to whatever the law and operations require, and remove retired devices and former personnel promptly.
+
+The live guide also publishes a list of what an administrator should have written down — worth reproducing, because it is the difference between an audit that takes an hour and one that takes a week:
+
+- the organization name and its immutable identifiers;
+- the business owner and the technical contacts;
+- the approved device ownership and enrollment policy;
+- the approved egress networks;
+- the source-server owners and their secret-rotation dates;
+- the plan owner, the renewal process and the payment escalation contact;
+- the log retention policy and the incident-response contacts.
+
+One rule underpins all of it: **rely on the current API response and the published OpenAPI schema, not on whether a control is visible.** A rendered button is not a permission.
 
 ## Membership hygiene
 
@@ -143,6 +167,7 @@ Two cautions worth stating: audit records describe **control-plane** actions and
 | Write denied although reads work | Read access does not imply write access. Confirm the role. |
 | Agent not listed | Confirm the active organization and that the membership role is `agent`. |
 | Generated password lost | Open the agent in Dashboard → Agents and reveal it; if the agent predates credential storage, issue a new password. |
+| Source secret unavailable | It is intentionally shown once. Rotate or recreate it through the approved workflow — do not attempt to recover cleartext from the database. |
 | `402 subscription_required` | The workspace has no active plan. Agents, devices and downloads stay locked until one is paid. |
 | Unexpected cross-organization result | Stop the workflow, preserve request IDs and timestamps, and escalate as a tenant-isolation incident. |
 
